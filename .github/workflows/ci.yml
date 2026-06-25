@@ -1,4 +1,4 @@
-name: Django CI
+name: Django CI + Docker Build
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "ci-setup" ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +24,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirimientos.txt
 
-      - name: Run Django tests
+      - name: Run tests
         env:
           DB_ENGINE: django.db.backends.sqlite3
           DB_DATABASE: db.sqlite3
@@ -34,3 +34,25 @@ jobs:
           DB_PORT: ""
         run: |
           python manage.py test
+
+  docker-build:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t proy_sales_poo:latest .
+
+      - name: Save Docker image as artifact
+        run: |
+          docker save proy_sales_poo:latest -o docker-image.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: docker-image.tar
